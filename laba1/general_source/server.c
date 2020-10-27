@@ -1,61 +1,72 @@
+
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+ #include <unistd.h>
+int main(){
+    char buffer[256+1];
+    FILE* fp = popen("file * | grep ':.* shell' | cut -f1 -d':' | xargs", "r");
+    size_t read_chars;
+    size_t result_size = 0;
+    char* files = (char*) calloc(256+1, sizeof(char));
+    if (files == NULL)
+    {
+        perror("problems with allocating");
+        return 1;
+    }
 
-struct person
-{
-    char name[20];
-    int age;
-    char dob[10];
-};
+    while( (read_chars = fread(buffer, 1, sizeof(buffer), fp) ) )
+    {
 
-struct student
-{
-    struct person info;
-    int rollno;
-    float marks[10];
-}
+        files = realloc(files, (result_size + read_chars)+1);
 
-struct student student_1 = {
-                               {"Adam", 25, 1990},
-                               101,
-                               90
-                           };
-struct my_msgbuf{
-  long mtype;
-  struct data {
-  char mtext[200][200];
-  int size;
-} text;
-}buf;
+        memmove(files + result_size, buffer, read_chars);
+        result_size += read_chars;
+    }
 
- char paths[200][200];
-char path[1000];
-int main()
-{
-  FILE * fp;
+    pclose(fp);
+    struct my_msgbuf{
+        long mtype;
+        char mtext[strlen(files)];
+    };
 
-  //key_t key = ftok("server.c" , 'a');
-  //int msqid = msgget(key,0600|IPC_CREAT|IPC_EXCL);
-  //struct my_msgbuf buf;
+    struct my_msgbuf buf;
 
-  fp = popen("ls *", "r");
-  int count = 0;
+    strcpy(buf.mtext, files);
 
-  while (fgets(path, 200,fp)!= NULL)
-  {
-       path[strlen(path)-1] = '\0';
-       strcpy(paths[count], path);
-       ++count;
+    free(files);
 
-  }
+    buf.mtype = 1;
 
-  pclose(fp);
-  printf("%s\n",student_1.info.name);
-   // for(int i = 0 ; i < count; i++){
-   //   printf("%s\n", buf.text.mtext[i]);
-   // }
+    key_t key = ftok("server.c", 'a');
 
-  return 0;
+    if ( key == -1)
+    {
+        perror("problems with key");
+        return 2;
+    }
+
+    int msqid = msgget(key,0600|IPC_CREAT|IPC_EXCL);
+
+    if (msqid == -1)
+    {
+        perror("problems with message queue's id");
+        return 3;
+    }
+
+    printf(" Sending: %s with size=%zu\n", buf.mtext, strlen(buf.mtext));
+    sleep(3);
+    int ans = msgsnd(msqid, &buf, strlen(buf.mtext), 0);
+    if (ans == -1)
+    {
+        perror("problems with sending");
+        msgctl(msqid, IPC_RMID, NULL);
+        return 4;
+    }
+    printf("Message has been sent\n");
+
+
+    return 0;
 }
