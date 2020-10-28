@@ -73,7 +73,8 @@ int timeuser(char* beg, int len){
 
     }
     buffer[len]='\0';
-    printf("%s\n",buffer);
+
+    printf("%s is working about ",buffer);
 
     return gettime(buffer);
 }
@@ -83,21 +84,25 @@ void getans(char* users){
     while (users[i]!='\0'){
             if(users[i] == '\n'){
 
-                printf("%s working about %d\n",users + offset,now()-timeuser(users+offset, i));
+                printf("%d\n",now()-timeuser(users+offset, i));
                 offset=i+1;
             }
         ++i;
     }
-printf("%s working about %d\n",users + offset,now() - timeuser(users+offset, i));
+printf("%d\n",now() - timeuser(users+offset, i));
 }
 int main()
 {//   TimeToInt("01:00");
 //     gettime("robin");
   getans("batman\nrobin\0");
 
+  char * s;
+  int = 1000;
+  sprintf(addr())
+
 
  //printf("%d\n",gettime("batman") );
-printf("%d\n",now());
+
 
     return 0;
 }

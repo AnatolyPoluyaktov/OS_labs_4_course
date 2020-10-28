@@ -4,6 +4,7 @@
 #include <sys/sem.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 struct sembuf plus[1] = {{0,4,0}};
 struct sembuf minus[1] = {{0,-3,0}};
 char* addr;
@@ -31,14 +32,12 @@ int main()
     }
 
     pclose(fp);
-    printf("%s",users);
     key_t key = ftok("server.c", 'a');
-    int shmid = shmget(key, 0,0);
-    if (shmid == -1)
-    {
-        perror("error shmget");
-        exit(1);
+    int shmid;
+    while((shmid =shmget(key, 0,0))== -1){
+        sleep(1);
     }
+
     addr = (char*)shmat(shmid, 0, 0);
       if ( addr == (char*)(-1))
       {
@@ -46,13 +45,12 @@ int main()
           exit(1);
       }
      strcpy(addr,users);
-     int semid = semget(key,0,0);
-
-     if (semid == -1)
-     {
-         perror("error semget");
-         exit(1);
+     int semid;
+     while((semid = semget(key,0,0) )== -1){
+         sleep(1);
      }
+
+
 
     if (semop(semid,plus,1) < 0){
         perror("semop");
@@ -62,8 +60,13 @@ int main()
         perror("semop");
         exit(1);
     }
+    printf("полученное время в клиенте: ");
+    printf("%s\n",addr );
+    if (shmdt(addr) < 0) {
+        printf("shmdt error");
+        exit(1);
+    }
 
-    printf("kek\n");
 
      free(users);
     return 0;

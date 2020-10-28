@@ -77,7 +77,8 @@ int timeuser(char* beg, int len){
 
     }
     buffer[len]='\0';
-    printf("%s\n",buffer);
+
+    printf("%s is working about ",buffer);
 
     return gettime(buffer);
 }
@@ -87,14 +88,14 @@ void getans(char* users){
     while (users[i]!='\0'){
             if(users[i] == '\n'){
 
-                printf("%s working about %d\n",users + offset,now()-timeuser(users+offset, i));
+                printf("%dm\n",now()-timeuser(users+offset, i));
                 offset=i+1;
             }
         ++i;
     }
-printf("%s working about %d\n",users + offset,now() - timeuser(users+offset, i));
+printf("%dm\n",now() - timeuser(users+offset, i));
 }
-
+//--------------------------
 struct sembuf plus[1] = {{0,4,0}};
 struct sembuf minus[1] = {{0,-3,0}};
 char* addr;
@@ -102,7 +103,7 @@ union semun
 {
     int val;
     struct semid_ds* sbuf;
-    ushort* array;
+    ushort* array;//массив значений семафоров в наборе
 }arg;
 
 int main()
@@ -146,10 +147,37 @@ int main()
             perror("error semop");
     }
     addr[strlen(addr)-1]='\0';
-    printf("%s\n", addr);
-    printf("%ld\n", strlen(addr));
+
 
     getans(addr);
+    struct semid_ds buf;
+    arg.sbuf = &buf;
+    if (semctl( semid, 0, IPC_STAT, arg) ==-1)
+    {
+        perror("bad");
+        exit(1);
+    }
+    printf( "время когда последний процесс выполнял операции над семафорами %ld\n", arg.sbuf->sem_otime);
+
+    sprintf(addr,"%ld",arg.sbuf->sem_otime);
+    if (semop(semid,plus,1) < 0){
+        perror("semop");
+        exit(1);
+    }
+    if (shmdt(addr) < 0) {
+        printf("shmdt error");
+        exit(1);
+    }
+    //REMOVE ROP
+    if (shmctl(shmid, IPC_RMID, 0) < 0) {
+        printf("error shmctl");
+        exit(1);
+    }
+    //REMOVE SEMS
+    if (semctl(semid, 0, IPC_RMID) < 0) {
+        printf("error semctl\n");
+        exit(1);
+    }
 
 
 
