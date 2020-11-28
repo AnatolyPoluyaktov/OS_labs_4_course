@@ -61,6 +61,7 @@ int main()
  
 
     close(s2);
+    unlink(SOCK_PATH);
     
 	return 0;
 }
