@@ -49,10 +49,10 @@ int main()
     remote.sun_family = AF_UNIX;
     strcpy(remote.sun_path, SOCK_PATH);
     len = strlen(remote.sun_path) + sizeof(remote.sun_family);
-    if (connect(s, (struct sockaddr *)&remote, len) == -1) {
-        perror("connect");
-        exit(1);
-    }
+    while(connect(s, (struct sockaddr *)&remote, len)){
+    	sleep(1);
+   
+}
 
     printf("Connected.\n"); 
     send(s, str, strlen(str), 0);
